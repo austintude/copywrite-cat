@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "copywrite-cat/slot",
+  "title": "Copy Slot (Copywrite Cat)",
+  "category": "widgets",
+  "icon": "edit",
+  "description": "A pinned copy placeholder that will be filled with approved copy.",
+  "textdomain": "copywrite-cat",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "label": { "type": "string", "default": "Copy Slot" },
+    "slotType": { "type": "string", "default": "paragraph" },
+    "status": { "type": "string", "default": "not_started" },
+    "approvedText": { "type": "string", "default": "" }
+  },
+  "editorScript": "file:./index.js"
+}

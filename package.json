@@ -1,0 +1,16 @@
+{
+  "name": "copywrite-cat",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Copywrite Cat WordPress plugin",
+  "scripts": {
+    "start": "wp-scripts start",
+    "build": "wp-scripts build",
+    "package": "node scripts/package.mjs",
+    "zip": "npm run build && npm run package && tar -a -c -f copywrite-cat.zip -C dist copywrite-cat"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0",
+    "copy-webpack-plugin": "^12.0.2"
+  }
+}
