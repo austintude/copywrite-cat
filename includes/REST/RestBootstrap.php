@@ -10,6 +10,7 @@ final class RestBootstrap {
 	public const NS = 'copywrite-cat/v1';
 
 	public function register(): void {
+		( new ProjectsController() )->register_routes();
 		( new SlotsController() )->register_routes();
 		( new VersionsController() )->register_routes();
 		( new CommentsController() )->register_routes();

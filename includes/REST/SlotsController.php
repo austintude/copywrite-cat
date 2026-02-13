@@ -27,6 +27,7 @@ final class SlotsController {
 					'callback' => [ $this, 'create' ],
 					'permission_callback' => [ Permissions::class, 'must_be_logged_in' ],
 					'args' => [
+						'projectId' => [ 'type' => 'integer', 'required' => true ],
 						'pagePostId' => [ 'type' => 'integer', 'required' => true ],
 						'label' => [ 'type' => 'string', 'required' => true ],
 						'slotType' => [ 'type' => 'string', 'required' => true ],
@@ -50,30 +51,51 @@ final class SlotsController {
 	}
 
 	public function list( WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$project_id = (int) $request->get_param( 'projectId' );
 		$page_post_id = (int) $request->get_param( 'pagePostId' );
+
+		$meta_query = [];
+		if ( $project_id ) {
+			if ( ! Permissions::is_project_member( $project_id, $user_id ) ) {
+				return new WP_Error( 'cwc_forbidden', 'Not a project member.', [ 'status' => 403 ] );
+			}
+			$meta_query[] = [ 'key' => 'project_id', 'value' => $project_id ];
+		}
+		if ( $page_post_id ) {
+			$meta_query[] = [ 'key' => 'page_post_id', 'value' => $page_post_id ];
+		}
+
 		$args = [
 			'post_type' => SlotCPT::CPT,
 			'posts_per_page' => 200,
 			'post_status' => 'any',
-			'meta_query' => $page_post_id ? [ [ 'key' => 'page_post_id', 'value' => $page_post_id ] ] : [],
+			'meta_query' => $meta_query,
 		];
 		$q = new \WP_Query( $args );
 
-		$items = array_map(
-			function ( $p ) {
-				return $this->to_item( $p->ID );
-			},
-			$q->posts
-		);
+		$items = [];
+		foreach ( $q->posts as $p ) {
+			$pid = (int) get_post_meta( $p->ID, 'project_id', true );
+			if ( $pid && Permissions::is_project_member( $pid, $user_id ) ) {
+				$items[] = $this->to_item( $p->ID );
+			}
+		}
 
 		return new WP_REST_Response( [ 'items' => $items ] );
 	}
 
 	public function create( WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$project_id = (int) $request->get_param( 'projectId' );
 		$page_post_id = (int) $request->get_param( 'pagePostId' );
 		$label = sanitize_text_field( (string) $request->get_param( 'label' ) );
 		$slot_type = sanitize_key( (string) $request->get_param( 'slotType' ) );
 		$block_client_id = sanitize_text_field( (string) $request->get_param( 'blockClientId' ) );
+
+		if ( ! $project_id || ! Permissions::is_project_member( $project_id, $user_id ) ) {
+			return new WP_Error( 'cwc_forbidden', 'Not a project member.', [ 'status' => 403 ] );
+		}
 
 		$post_id = wp_insert_post(
 			[
@@ -87,6 +109,7 @@ final class SlotsController {
 			return $post_id;
 		}
 
+		update_post_meta( $post_id, 'project_id', $project_id );
 		update_post_meta( $post_id, 'page_post_id', $page_post_id );
 		update_post_meta( $post_id, 'label', $label );
 		update_post_meta( $post_id, 'slot_type', $slot_type );
@@ -129,6 +152,7 @@ final class SlotsController {
 	private function to_item( int $id ): array {
 		return [
 			'id' => $id,
+			'projectId' => (int) get_post_meta( $id, 'project_id', true ),
 			'label' => (string) get_post_meta( $id, 'label', true ),
 			'slotType' => (string) get_post_meta( $id, 'slot_type', true ),
 			'status' => (string) get_post_meta( $id, 'status', true ),

@@ -12,11 +12,24 @@ function PortalApp() {
 	const [ commentText, setCommentText ] = useState( '' );
 	const [ error, setError ] = useState( '' );
 
+	const [ projects, setProjects ] = useState( [] );
+	const [ projectId, setProjectId ] = useState( 0 );
+
 	useEffect( () => {
-		apiFetch( { path: '/copywrite-cat/v1/slots' } )
+		apiFetch( { path: '/copywrite-cat/v1/projects' } )
+			.then( ( res ) => {
+				setProjects( res.items || [] );
+				if ( ( res.items || [] )[ 0 ]?.id ) setProjectId( ( res.items || [] )[ 0 ].id );
+			} )
+			.catch( ( e ) => setError( e?.message || 'Failed to load projects' ) );
+	}, [] );
+
+	useEffect( () => {
+		if ( ! projectId ) return;
+		apiFetch( { path: `/copywrite-cat/v1/slots?projectId=${ projectId }` } )
 			.then( ( res ) => setSlots( res.items || [] ) )
 			.catch( ( e ) => setError( e?.message || 'Failed to load slots' ) );
-	}, [] );
+	}, [ projectId ] );
 
 	useEffect( () => {
 		if ( ! selected ) return;
@@ -58,20 +71,31 @@ function PortalApp() {
 			path: `/copywrite-cat/v1/slots/${ selected.id }/approve`,
 			method: 'POST',
 			data: { level, versionId },
-		} ).then( () => {
-			// refresh slots list
-			return apiFetch( { path: '/copywrite-cat/v1/slots' } );
-		} ).then( ( res ) => {
-			setSlots( res.items || [] );
-			const updated = ( res.items || [] ).find( ( s ) => s.id === selected.id );
-			if ( updated ) setSelected( updated );
-		} );
+		} )
+			.then( () => apiFetch( { path: `/copywrite-cat/v1/slots?projectId=${ projectId }` } ) )
+			.then( ( res ) => {
+				setSlots( res.items || [] );
+				const updated = ( res.items || [] ).find( ( s ) => s.id === selected.id );
+				if ( updated ) setSelected( updated );
+			} );
 	};
 
 	return (
 		<div style={ { display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16 } }>
 			<div style={ { borderRight: '1px solid #eee', paddingRight: 16 } }>
 				<h2>Copy Slots</h2>
+				<div style={ { marginBottom: 8 } }>
+					<label>
+						Project:{ ' ' }
+						<select value={ projectId } onChange={ ( e ) => setProjectId( parseInt( e.target.value, 10 ) || 0 ) }>
+							{ projects.map( ( p ) => (
+								<option key={ p.id } value={ p.id }>
+									{ p.title }
+								</option>
+							) ) }
+						</select>
+					</label>
+				</div>
 				{ error ? <div style={ { color: 'crimson' } }>{ error }</div> : null }
 				<ul>
 					{ slots.map( ( s ) => (

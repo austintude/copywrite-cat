@@ -4,7 +4,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
-	const { slotId, pagePostId, label, slotType, status, approvedText } = attributes;
+	const { slotId, projectId, pagePostId, label, slotType, status, approvedText } = attributes;
 
 	// Persist a stable client id for debugging.
 	useEffect( () => {
@@ -20,12 +20,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			setAttributes( { pagePostId: postId } );
 		}
 
-		if ( slotId || ! postId ) return;
+		if ( slotId || ! postId || ! projectId ) return;
 
 		apiFetch( {
 			path: '/copywrite-cat/v1/slots',
 			method: 'POST',
 			data: {
+				projectId,
 				pagePostId: postId,
 				label: label || 'Copy Slot',
 				slotType: slotType || 'paragraph',
@@ -34,7 +35,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		} )
 			.then( ( res ) => {
 				if ( res?.item?.id ) {
-					setAttributes( { slotId: res.item.id, status: res.item.status } );
+					setAttributes( { slotId: res.item.id, status: res.item.status, pagePostId: postId } );
 				}
 			} )
 			.catch( () => {
@@ -55,6 +56,12 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						label="Label"
 						value={ label }
 						onChange={ ( v ) => setAttributes( { label: v } ) }
+					/>
+					<TextControl
+						label="Project ID"
+						help="MVP: set the Project ID this slot belongs to."
+						value={ projectId || '' }
+						onChange={ ( v ) => setAttributes( { projectId: parseInt( v || '0', 10 ) || undefined } ) }
 					/>
 					<SelectControl
 						label="Type"

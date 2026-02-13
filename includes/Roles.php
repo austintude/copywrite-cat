@@ -39,7 +39,7 @@ final class Roles {
 			return; // allow profile edits for now.
 		}
 
-		wp_safe_redirect( home_url( '/' ) );
+		wp_safe_redirect( \CopywriteCat\Settings::get_portal_url() );
 		exit;
 	}
 

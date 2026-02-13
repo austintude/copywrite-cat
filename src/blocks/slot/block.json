@@ -12,6 +12,7 @@
   },
   "attributes": {
     "slotId": { "type": "number" },
+    "projectId": { "type": "number" },
     "pagePostId": { "type": "number" },
     "blockClientId": { "type": "string" },
 
