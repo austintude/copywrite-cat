@@ -1,16 +1,24 @@
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const { slotId, projectId, pagePostId, label, slotType, status, approvedText } = attributes;
+	const [ projects, setProjects ] = useState( [] );
 
 	// Persist a stable client id for debugging.
 	useEffect( () => {
 		if ( ! attributes.blockClientId ) {
 			setAttributes( { blockClientId: clientId } );
 		}
+	}, [] );
+
+	// Load projects for a simple picker.
+	useEffect( () => {
+		apiFetch( { path: '/copywrite-cat/v1/projects' } )
+			.then( ( res ) => setProjects( res.items || [] ) )
+			.catch( () => setProjects( [] ) );
 	}, [] );
 
 	// Create backing slot record the first time the block is inserted.
@@ -57,11 +65,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						value={ label }
 						onChange={ ( v ) => setAttributes( { label: v } ) }
 					/>
-					<TextControl
-						label="Project ID"
-						help="MVP: set the Project ID this slot belongs to."
-						value={ projectId || '' }
-						onChange={ ( v ) => setAttributes( { projectId: parseInt( v || '0', 10 ) || undefined } ) }
+					<SelectControl
+						label="Project"
+						value={ projectId || 0 }
+						options={ [
+							{ label: 'Select a project…', value: 0 },
+							...projects.map( ( p ) => ( { label: p.title, value: p.id } ) ),
+						] }
+						onChange={ ( v ) => setAttributes( { projectId: parseInt( v, 10 ) || undefined } ) }
 					/>
 					<SelectControl
 						label="Type"

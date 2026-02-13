@@ -32,6 +32,10 @@ final class ApprovalsController {
 
 	public function approve( WP_REST_Request $request ) {
 		$slot_id = (int) $request['slotId'];
+		$perm = Permissions::must_be_slot_member( $slot_id );
+		if ( true !== $perm ) {
+			return $perm;
+		}
 		$level = sanitize_key( (string) $request->get_param( 'level' ) );
 		$version_id = (int) $request->get_param( 'versionId' );
 

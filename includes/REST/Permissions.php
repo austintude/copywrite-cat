@@ -40,4 +40,19 @@ final class Permissions {
 		$designers = array_map( 'intval', $designers );
 		return in_array( $user_id, $clients, true ) || in_array( $user_id, $designers, true );
 	}
+
+	public static function must_be_slot_member( int $slot_id ) {
+		$logged_in = self::must_be_logged_in();
+		if ( true !== $logged_in ) {
+			return $logged_in;
+		}
+		$project_id = (int) get_post_meta( $slot_id, 'project_id', true );
+		if ( ! $project_id ) {
+			return new WP_Error( 'cwc_bad_slot', 'Slot missing project.', [ 'status' => 400 ] );
+		}
+		if ( ! self::is_project_member( $project_id, get_current_user_id() ) ) {
+			return new WP_Error( 'cwc_forbidden', 'Not a project member.', [ 'status' => 403 ] );
+		}
+		return true;
+	}
 }

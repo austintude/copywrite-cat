@@ -35,16 +35,24 @@ final class CommentsController {
 	}
 
 	public function list( WP_REST_Request $request ) {
-		global $wpdb;
 		$slot_id = (int) $request['slotId'];
+		$perm = Permissions::must_be_slot_member( $slot_id );
+		if ( true !== $perm ) {
+			return $perm;
+		}
+		global $wpdb;
 		$table = $wpdb->prefix . 'cwc_slot_comments';
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE slot_id = %d ORDER BY id ASC LIMIT 200", $slot_id ), ARRAY_A );
 		return new WP_REST_Response( [ 'items' => array_map( [ $this, 'to_item' ], $rows ) ] );
 	}
 
 	public function create( WP_REST_Request $request ) {
-		global $wpdb;
 		$slot_id = (int) $request['slotId'];
+		$perm = Permissions::must_be_slot_member( $slot_id );
+		if ( true !== $perm ) {
+			return $perm;
+		}
+		global $wpdb;
 		$text = (string) $request->get_param( 'commentText' );
 		$parent = (int) $request->get_param( 'parentId' );
 
