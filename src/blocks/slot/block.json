@@ -11,6 +11,10 @@
     "html": false
   },
   "attributes": {
+    "slotId": { "type": "number" },
+    "pagePostId": { "type": "number" },
+    "blockClientId": { "type": "string" },
+
     "label": { "type": "string", "default": "Copy Slot" },
     "slotType": { "type": "string", "default": "paragraph" },
     "status": { "type": "string", "default": "not_started" },

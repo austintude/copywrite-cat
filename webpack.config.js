@@ -6,6 +6,7 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		'blocks/slot/index': path.resolve( __dirname, 'src/blocks/slot/index.js' ),
+		'portal/index': path.resolve( __dirname, 'src/portal/index.js' ),
 	},
 	output: {
 		...defaultConfig.output,

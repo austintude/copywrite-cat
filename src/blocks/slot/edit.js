@@ -1,8 +1,46 @@
+import { useEffect } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, TextControl, SelectControl } from '@wordpress/components';
 
-export default function Edit( { attributes, setAttributes } ) {
-	const { label, slotType, status, approvedText } = attributes;
+export default function Edit( { attributes, setAttributes, clientId } ) {
+	const { slotId, pagePostId, label, slotType, status, approvedText } = attributes;
+
+	// Persist a stable client id for debugging.
+	useEffect( () => {
+		if ( ! attributes.blockClientId ) {
+			setAttributes( { blockClientId: clientId } );
+		}
+	}, [] );
+
+	// Create backing slot record the first time the block is inserted.
+	useEffect( () => {
+		const postId = wp?.data?.select( 'core/editor' )?.getCurrentPostId?.();
+		if ( ! pagePostId && postId ) {
+			setAttributes( { pagePostId: postId } );
+		}
+
+		if ( slotId || ! postId ) return;
+
+		apiFetch( {
+			path: '/copywrite-cat/v1/slots',
+			method: 'POST',
+			data: {
+				pagePostId: postId,
+				label: label || 'Copy Slot',
+				slotType: slotType || 'paragraph',
+				blockClientId: clientId,
+			},
+		} )
+			.then( ( res ) => {
+				if ( res?.item?.id ) {
+					setAttributes( { slotId: res.item.id, status: res.item.status } );
+				}
+			} )
+			.catch( () => {
+				// Silent fail for now; editor should not break.
+			} );
+	}, [ slotId ] );
 
 	const blockProps = useBlockProps( {
 		className: 'cwc-slot',
@@ -47,7 +85,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			<div { ...blockProps }>
 				<div style={ { fontWeight: 600 } }>{ label }</div>
 				<div style={ { fontSize: 12, opacity: 0.8 } }>
-					Type: { slotType } • Status: { status }
+					Slot: { slotId ? `#${ slotId }` : '(creating...)' } • Type: { slotType } • Status: { status }
 				</div>
 				<hr />
 				{ approvedText ? (
