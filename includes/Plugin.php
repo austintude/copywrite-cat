@@ -17,11 +17,14 @@ final class Plugin {
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_action( 'admin_init', [ $this, 'maybe_lockout_client_role' ] );
 		add_action( 'wp_before_admin_bar_render', [ $this, 'maybe_hide_admin_bar' ] );
+
+		( new Admin\SettingsPage() )->hooks();
 	}
 
 	public function activate(): void {
 		( new Roles() )->add_roles();
 		( new DB\Migrations() )->migrate();
+		$this->ensure_portal_page();
 		flush_rewrite_rules();
 	}
 
@@ -48,6 +51,26 @@ final class Plugin {
 
 	public function register_shortcodes(): void {
 		add_shortcode( 'copywrite_cat_portal', [ $this, 'render_portal_shortcode' ] );
+	}
+
+	private function ensure_portal_page(): void {
+		$page_id = (int) get_option( Settings::OPTION_PORTAL_PAGE_ID, 0 );
+		if ( $page_id && get_post( $page_id ) ) {
+			return;
+		}
+
+		// Create a portal page so clients have a single front-end entry point.
+		$new_id = wp_insert_post(
+			[
+				'post_type' => 'page',
+				'post_status' => 'publish',
+				'post_title' => 'Copywriter Cat Portal',
+				'post_content' => '[copywrite_cat_portal]',
+			]
+		);
+		if ( ! is_wp_error( $new_id ) && $new_id ) {
+			update_option( Settings::OPTION_PORTAL_PAGE_ID, (int) $new_id );
+		}
 	}
 
 	public function render_portal_shortcode( $atts = [] ): string {
